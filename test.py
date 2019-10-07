@@ -16,14 +16,14 @@ parser.add_argument("--model_path", type=str, default="checkpoint/FEQE/model.ckp
 parser.add_argument('--save_path', type=str, default='results')
 parser.add_argument("--dataset", default="Set5", type=str, help="dataset name, Default: Set5")
 
-parser.add_argument('--downsample_type', type=str, default='desubpixel')
-parser.add_argument('--upsample_type', type=str, default='subpixel')
+parser.add_argument('--downsample_type', type=str, default='desubpixel')//下采样类型
+parser.add_argument('--upsample_type', type=str, default='subpixel')//上采样类型
 parser.add_argument('--conv_type', type=str, default='default')
-parser.add_argument('--body_type', type=str, default='resnet')
+parser.add_argument('--body_type', type=str, default='resnet')//残差网络
 parser.add_argument('--n_feats', type=int, default=16,
                     help='number of convolution feats')
 parser.add_argument('--n_blocks', type=int, default=20,
-                    help='number of residual block if body_type=resnet')
+                    help='number of residual block if body_type=resnet')//剩余块
 parser.add_argument('--n_groups', type=int, default=0,
                     help='number of residual group if body_type=res_in_res')
 parser.add_argument('--n_convs', type=int, default=0,
@@ -48,14 +48,14 @@ print('')
 def main():
     #==================Data==================================
     print('Loading data...')
-    test_hr_path = os.path.join('./data/test_benchmark', args.dataset)
+    test_hr_path = os.path.join('./data/test_benchmark', args.dataset)//测试集路径
     hr_paths = glob.glob(os.path.join(test_hr_path, '*.png'))
     hr_paths.sort()
 
     #=================Model===================================
     print('Loading model...')
-    t_lr = tf.placeholder('float32', [1, None, None, 3], name='input_image')
-    t_hr = tf.placeholder('float32', [1, None, None, 3], name='label_image')
+    t_lr = tf.placeholder('float32', [1, None, None, 3], name='input_image')//输入图像
+    t_hr = tf.placeholder('float32', [1, None, None, 3], name='label_image')//正常图像
 
     opt = {
         'n_feats': args.n_feats,
@@ -69,26 +69,26 @@ def main():
         'body_type': args.body_type,
         'scale': args.scale
     }
-    t_sr = FEQE(t_lr, opt)
+    t_sr = FEQE(t_lr, opt)//FEQE函数，两个参数。一个是输入图像矩阵，一个是很多参数
 
     sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True, log_device_placement=False))
     tl.layers.initialize_global_variables(sess)
     saver = tf.train.Saver()
-    saver.restore(sess, args.model_path)
+    saver.restore(sess, args.model_path)//存储模型
 
     #=================result=================================
     save_path = os.path.join(args.save_path, args.dataset)
     if not os.path.exists(save_path):
-        os.makedirs(save_path)
+        os.makedirs(save_path)//存储结果
 
     psnr_avr = 0
-    for i, _ in enumerate(hr_paths):
+    for i, _ in enumerate(hr_paths)://遍历测试的图片
         print('processing image %d' %i)
-        hr_org = imageio.imread(hr_paths[i])
+        hr_org = imageio.imread(hr_paths[i])//读入图片
         lr = downsample_fn(hr_org)
-        [hr, lr] = normalize([hr_org, lr])
+        [hr, lr] = normalize([hr_org, lr])//归一化
 
-        lr = lr[np.newaxis, :, :, :]
+        lr = lr[np.newaxis, :, :, :]//增加一维
         hr = hr[np.newaxis, :, :, :]
 
         [sr] = sess.run([t_sr], {t_lr: lr, t_hr: hr})
